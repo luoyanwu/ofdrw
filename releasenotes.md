@@ -1,15 +1,52 @@
 # 发布记录和特性
 
-## TODO 列表
-
-期望新功能
-
-- 页面模板、页面模板导入使用。
-- 文字提取。
-- ~~OFD转图片、PDF。~~，无计划
-- ~~段落的行内布局控制（text-align）能让固定布局样式文字居中~~，需求不足。
-
 ## 进展
+
+## Version 1.6.0 2020-10-13 20:22:28
+
+新功能：
+
+- [关键定位功能](ofdrw-reader/src/test/java/org/ofdrw/reader/keyword/KeywordExtractorTest.java)
+- [骑缝章的自由定位](ofdrw-sign/src/test/java/org/ofdrw/sign/stamppos/RidingStampPosTest.java)
+- [不同版本电子签章兼容解析](ofdrw-gm/src/test/java/org/ofdrw/gm/ses/parse/VersionParserTest.java)
+
+修复:
+
+- 修复了 CustomDatas 在解析CustomData 序列时候错误的关键字使用。
+- 修复了V4版本电子签章可选参数tag0的错误。
+- 兼容非标准推荐的签名ID，如"sN"、"N"类型的解析。
+- 支持了坐标偏移中厂商定义的`g`参数偏移量。
+
+## Version 1.5.6 2020-9-21 23:14:58
+
+- 修复了无法解析OFD内含有中文目录的文件错误。
+- 新增了OFD页面文字抽取的方法：
+    
+    文字抽取参考[ContentExtractorTest.java](ofdrw-reader/src/test/java/org/ofdrw/reader/ContentExtractorTest.java)
+
+## Version 1.5.5 2020-9-15 21:43:31
+
+- 修复了ST_Array 数组含有多空格抛出IAE的问题。
+- 兼容了旧的OFD命名空间。
+
+## Version 1.5.4 2020-8-26 20:10:15
+
+- 简化了`ofdrw-font`字体库以及相关API，移除了内嵌的几个noto字体，减少库体积。
+
+### Version 1.5.3 2020-8-24 21:02:49
+
+- OFDSigner 可以使用自己构造的签名ID提供器，而不是标准推荐的 "s'NNN'"格式
+    
+    需要手动实现 `org.ofdrw.sign.SignIDProvider`接口
+
+### Version 1.5.2 2020-6-20 10:04:37
+
+- 修复了注释对象参数无法添加多个的问题。
+
+### Version 1.5.1 2020-6-6 11:06:28
+
+- CVE-2020-10683 dom4j库可能造成XXE 攻击，升级该库至2.1.3。
+- 增加了替换附件的功能。
 
 ### Version 1.5.0 2020-5-19 20:45:50
 

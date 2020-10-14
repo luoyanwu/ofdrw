@@ -20,7 +20,6 @@ import org.ofdrw.reader.BadOFDException;
 import org.ofdrw.reader.OFDReader;
 import org.ofdrw.reader.ResourceLocator;
 import org.ofdrw.sign.stamppos.StampAppearance;
-import org.ofdrw.sign.verify.exceptions.FileIntegrityException;
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -33,7 +32,6 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -56,10 +54,8 @@ public class OFDSigner implements Closeable {
     /**
      * OFDRW 签名提供者
      */
-    public static Provider OFDRW_Provider;
-
-    static {
-        OFDRW_Provider = new Provider()
+    public static Provider OFDRW_Provider() {
+        return new Provider()
                 .setProviderName("ofdrw-sign")
                 .setCompany("ofdrw")
                 .setVersion(GlobalVar.Version);
@@ -77,7 +73,7 @@ public class OFDSigner implements Closeable {
     /**
      * 最大签名ID提供者
      */
-    private AtomicSignID MaxSignID;
+    private SignIDProvider MaxSignID;
 
     /**
      * 数字签名模式
@@ -124,21 +120,29 @@ public class OFDSigner implements Closeable {
     /**
      * 创建OFD签名对象
      *
-     * @param reader OFD解析器
-     * @param out    电子签名后文件保存位置
+     * @param reader     OFD解析器
+     * @param out        电子签名后文件保存位置
+     * @param idProvider 签名文件ID提供器
+     * @since 2020-08-24 20:35:45
      */
-    public OFDSigner(OFDReader reader, Path out) throws SignatureTerminateException {
+    public OFDSigner(OFDReader reader, Path out, SignIDProvider idProvider) throws SignatureTerminateException {
         if (reader == null) {
             throw new IllegalArgumentException("OFD解析器（reader）为空");
         }
         if (out == null) {
             throw new IllegalArgumentException("电子签名后文件保存位置（out）为空");
         }
+        if (idProvider == null) {
+            throw new IllegalArgumentException("签名文件ID提供器（idProvider）为空");
+        }
 
         this.reader = reader;
         this.out = out;
         this.ofdDir = reader.getOFDDir();
         this.hasSign = false;
+        // 初始化从0起的最大签名ID，如果源文档中已经存在签名文件的情况
+        // 会在preChecker 设置为当前文件最大ID
+        this.MaxSignID = idProvider;
         apList = new LinkedList<>();
         // 默认采用 保护整个文档的数字签名模式
         signMode = SignMode.WholeProtected;
@@ -147,6 +151,17 @@ public class OFDSigner implements Closeable {
         preChecker();
     }
 
+    /**
+     * 创建OFD签名对象
+     * <p>
+     * 默认使用： s'NNN'格式解析和生成签名ID
+     *
+     * @param reader OFD解析器
+     * @param out    电子签名后文件保存位置
+     */
+    public OFDSigner(OFDReader reader, Path out) throws SignatureTerminateException {
+        this(reader, out, new StandFormatAtomicSignID());
+    }
 
     /**
      * 获取签章模式
@@ -217,8 +232,7 @@ public class OFDSigner implements Closeable {
             signaturesLoc = reader.getDefaultDocSignaturesPath();
             // 如果OFD.xml 不含有签名列表文件路径，那么设置需要更新
             if (signaturesLoc == null) {
-                // 从0起的最大签名ID
-                this.MaxSignID = new AtomicSignID();
+                // 最大签名ID从0起的
                 return;
             }
             // 获取签名列表对象
@@ -226,7 +240,8 @@ public class OFDSigner implements Closeable {
 
             // 载入文档中已有的最大签名ID
             String maxSignId = signatures.getMaxSignId();
-            this.MaxSignID = new AtomicSignID(maxSignId);
+            // 重新设置当前最大签名ID
+            this.MaxSignID.setCurrentMaxSignId(maxSignId);
 
             // 获取签名文件所在路径
             String parent = signaturesLoc.parent();
@@ -391,7 +406,7 @@ public class OFDSigner implements Closeable {
         // 构造签名信息
         SignedInfo signedInfo = new SignedInfo()
                 // 设置签名模块提供者信息
-                .setProvider(OFDRW_Provider)
+                .setProvider(OFDRW_Provider())
                 // 设置签名方法
                 .setSignatureMethod(signContainer.getSignAlgOID())
                 // 设置签名时间

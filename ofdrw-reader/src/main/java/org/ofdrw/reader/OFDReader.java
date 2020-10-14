@@ -1,10 +1,8 @@
 package org.ofdrw.reader;
 
-import com.sun.xml.internal.ws.api.message.Attachment;
 import net.lingala.zip4j.ZipFile;
 import org.apache.commons.io.FileUtils;
 import org.dom4j.DocumentException;
-import org.dom4j.Element;
 import org.ofdrw.core.annotation.Annotations;
 import org.ofdrw.core.attachment.Attachments;
 import org.ofdrw.core.attachment.CT_Attachment;
@@ -22,6 +20,7 @@ import org.ofdrw.pkg.container.DocDir;
 import org.ofdrw.pkg.container.OFDDir;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -80,7 +79,8 @@ public class OFDReader implements Closeable {
         }
         workDir = Files.createTempDirectory("ofd-tmp-");
         // 解压文档，到临时的工作目录
-        new ZipFile(ofdFile.toFile()).extractAll(workDir.toAbsolutePath().toString());
+        ZipUtil.unZipFiles(ofdFile.toFile(), workDir.toAbsolutePath().toString() + File.separator);
+//        new ZipFile(ofdFile.toFile()).extractAll(workDir.toAbsolutePath().toString());
         ofdDir = new OFDDir(workDir);
         // 创建资源定位器
         rl = new ResourceLocator(ofdDir);
